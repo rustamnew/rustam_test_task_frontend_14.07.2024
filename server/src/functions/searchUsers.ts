@@ -1,6 +1,18 @@
 import getUsers from "../utility/getUsers"
+import validateForm from '../utility/validateForm'
 
 export default (req: any, res: any) => {
+
+    const valid = validateForm(req.body)
+
+    if (!valid.valid) {
+        // Not valid form
+        res.status(400)
+        res.json({
+            errorMessages: valid.errorMessages
+        });
+        return
+    }
 
     // Получение номера без знаков маски
     let numberFixed = ''
