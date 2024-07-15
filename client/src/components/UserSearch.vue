@@ -38,13 +38,9 @@ async function onSubmit() {
         return false
     } else {
         try {
-            loading.value = true
             await sendForm()
         } catch (error) {
             console.log(error)
-            errorMessages.value.push('Ошибка соединения')
-        } finally {
-            loading.value = false
         }
     }
 }
@@ -65,12 +61,15 @@ function validateEmail() {
 
 // Отправка формы
 async function sendForm() {
+    loading.value = true
     usersFound.value = [] //Сброс текущих пользователей
     errorMessages.value = [] //Сброс текущих ошибок
 
     // Создание и сохранение контроллера для отмены запроса
     const controller = new AbortController()
     const signal = controller.signal
+
+    //Назначение нового контролера для текущего запроса
     prevRequestAbortController.value = controller
 
     // Запрос
@@ -89,16 +88,19 @@ async function sendForm() {
     const data = await response.json()
 
     if (data.users) {
+        errorMessages.value = [] //Сброс текущих ошибок
         usersFound.value = data.users
     } else if (data.errorMessages) {
         errorMessages.value = data.errorMessages
     }
+
+    loading.value = false
 }
 
 // Отмена предыдущего запроса
 function cancelPrevRequest() {
     if (prevRequestAbortController.value) {
-        prevRequestAbortController.value.abort()
+        prevRequestAbortController.value.abort('cancel previous request')
     }
 }
 </script>
