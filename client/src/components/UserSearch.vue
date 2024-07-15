@@ -25,8 +25,13 @@ const emailValid = ref(null)
 // Найденные пользователи
 const usersFound = ref([])
 
+// Контроллер предыдущего запроса
+const prevRequestAbortController = ref(null)
+
 // Обработка submit формы
 async function onSubmit() {
+    cancelPrevRequest() // Отмена предыдущего запроса
+
     const valid = validateEmail()
 
     if (!valid) {
@@ -36,6 +41,7 @@ async function onSubmit() {
             loading.value = true
             await sendForm()
         } catch (error) {
+            console.log(error)
             errorMessages.value.push('Ошибка соединения')
         } finally {
             loading.value = false
@@ -57,11 +63,17 @@ function validateEmail() {
     }
 }
 
-// Отправка запроса
+// Отправка формы
 async function sendForm() {
     usersFound.value = [] //Сброс текущих пользователей
     errorMessages.value = [] //Сброс текущих ошибок
 
+    // Создание и сохранение контроллера для отмены запроса
+    const controller = new AbortController()
+    const signal = controller.signal
+    prevRequestAbortController.value = controller
+
+    // Запрос
     const response = await fetch(URL, {
         method: 'POST',
         headers: {
@@ -70,7 +82,8 @@ async function sendForm() {
         body: JSON.stringify({
             email: emailModel.value || null,
             number: numberModel.value || null
-        })
+        }),
+        signal: signal // Контроллер для отмены запроса
     })
 
     const data = await response.json()
@@ -79,6 +92,13 @@ async function sendForm() {
         usersFound.value = data.users
     } else if (data.errorMessages) {
         errorMessages.value = data.errorMessages
+    }
+}
+
+// Отмена предыдущего запроса
+function cancelPrevRequest() {
+    if (prevRequestAbortController.value) {
+        prevRequestAbortController.value.abort()
     }
 }
 </script>
@@ -181,5 +201,11 @@ h3 {
 
 .errorMessages {
     color: red;
+    display: flex;
+    flex-direction: column;
+
+    span {
+        margin-bottom: 0.8rem;
+    }
 }
 </style>
